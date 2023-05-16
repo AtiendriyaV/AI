@@ -1,0 +1,383 @@
+from __future__ import print_function
+import speech_recognition as sr
+import os
+import time
+from gtts import gTTS
+import datetime
+import pyjokes
+import warnings
+import webbrowser
+import calendar
+import pyttsx3
+import random
+import smtplib
+import wikipedia
+import playsound
+import wolframalpha
+import requests
+import json
+import winshell
+import subprocess
+import ctypes
+from twilio.rest import Client
+import pickle
+import os.path
+import pyaudio
+
+warnings.filterwarnings("ignore")
+
+engine=pyttsx3.init('sapi5')
+voices = engine.getProperty("voices")
+engine.setProperty('voice',' voices[0].id')
+
+
+SCOPES = ['https://www.googleapis.com/auth/calendar.readonly']
+
+
+def talk(audio):
+    engine.say(audio)
+    engine.runAndWait()
+
+    
+    
+def rec_audio():
+    recog = sr.Recognizer()
+    print(recog)
+
+    
+    with sr.Microphone(device_index=1) as source:
+        print("Listening...")
+        recog.adjust_for_ambient_noise(source)
+        audio = recog.listen(source)
+        print(recog.recognize_google(audio))
+    data = " "
+
+    try:
+        print("You said: " + data)
+    except sr.UnknownValueError:
+        print("Assistant could not understand the audio")
+    except sr.RequestError as ex:
+        print("Request Error from Google Speech Recognition" + ex)
+
+    return data
+
+
+def response(text):
+    print(text)
+    tts = gTTS(text=text, lang="en")
+    audio = "Audio.mp3"
+    tts.save(audio)
+    playsound.playsound(audio)
+    os.remove(audio)
+
+
+def wishMe():
+    hour=datetime.datetime.now().hour
+    if hour>=0 and hour<12:
+        talk("Hello,Good Morning")
+        print("Hello,Good Morning")
+    elif hour>=12 and hour<18:
+        talk("Hello,Good Afternoon")
+        print("Hello,Good Afternoon")
+    else:
+        talk("Hello,Good Evening")
+        print("Hello,Good Evening")
+
+talk("Loading your AI personal assistant")
+print('Loading your AI personal assistant')
+wishMe()
+
+def wiki_person(text):
+    list_wiki = text.split()
+    for i in range(0, len(list_wiki)):
+        if i + 3 <= len(list_wiki) - 1 and list_wiki[i].lower() == "who" and list_wiki[i + 1].lower() == "is":
+            return list_wiki[i + 2] + " " + list_wiki[i + 3]
+
+
+def send_email(to, content):
+    server = smtplib.SMTP("smtp.gmail.com", 587)
+    server.ehlo()
+    server.starttls()
+
+    # Enable low security in gmail
+    server.login("email", "pass")
+    server.sendmail("email", to, content)
+    server.close()
+
+
+while True:
+
+    try:
+        text = rec_audio()
+        speak = ""
+
+        if call(text):
+
+            speak = speak + say_hello(text)
+
+            if "date" in text or "day" in text or "month" in text:
+                get_today = today_date()
+                speak = speak + " " + get_today
+
+            elif "time" in text:
+                now = datetime.datetime.now()
+                meridiem = ""
+                if now.hour >= 12:
+                    meridiem = "p.m"
+                    hour = now.hour - 12
+                else:
+                    meridiem = "a.m"
+                    hour = now.hour
+
+                if now.minute < 10:
+                    minute = "0" + str(now.minute)
+                else:
+                    minute = str(now.minute)
+                speak = speak + " " + "It is " + str(hour) + ":" + minute + " " + meridiem + " ."
+
+            elif "wikipedia" in text or "Wikipedia" in text:
+                if "who is" in text:
+                    person = wiki_person(text)
+                    wiki = wikipedia.summary(person, sentences=2)
+                    speak = speak + " " + wiki
+
+            elif "where is" in text:
+                ind = text.lower().split().index("is")
+                location = text.split()[ind + 1:]
+                url = "https://www.google.com/maps/place/" + "".join(location)
+                speak = speak + "This is where " + str(location) + " is."
+                webbrowser.open(url)
+
+            elif "what is the weather in" in text:
+                key = ""
+                weather_url = "http://api.openweathermap.org/data/2.5/weather?"
+                ind = text.split().index("in")
+                location = text.split()[ind + 1:]
+                location = "".join(location)
+                url = weather_url + "appid=" + key + "&q=" + location
+                js = requests.get(url).json()
+                if js["cod"] != "404":
+                    weather = js["main"]
+                    temperature = weather["temp"]
+                    temperature = temperature - 273.15
+                    humidity = weather["humidity"]
+                    desc = js["weather"][0]["description"]
+                    weatherResponse = " The temperature in Celcius is " + str(temperature) + " The humidity is " + str(
+                        humidity) + " and The weather description is " + str(desc)
+                    speak = speak + weatherResponse
+                else:
+                    speak = speak + "City Not Found"
+
+            elif "who are you" in text or "define yourself" in text:
+                speak = speak + "Hello, I am an Assistant. Your Assistant. I am here to make your life easier. You can command me to perform various tasks such as asking questions or opening applications etcetera"
+
+            elif "made you" in text or "created you" in text:
+                speak = speak + "I was created by Deon Cardoza"
+
+            elif "your name" in text:
+                speak = speak + "My name is Assistant"
+
+            elif "who am I" in text:
+                speak = speak + "You must probably be a human"
+
+            elif "why do you exist" in text or "why did you come to this word" in text:
+                speak = speak + "It is a secret"
+
+            elif "how are you" in text:
+                speak = speak + "I am awesome, Thank you"
+                speak = speak + "\nHow are you?"
+
+            elif "fine" in text or "good" in text:
+                speak = speak + "It's good to know that your fine"
+
+            elif "don't listen" in text or "stop listening" in text or "do not listen" in text:
+                talk("for how many seconds do you want me to sleep")
+                a = int(rec_audio())
+                time.sleep(a)
+                speak = speak + str(a) + " seconds completed. Now you can ask me anything"
+
+            elif "change background" in text or "change wallpaper" in text:
+                img = r"E:\...\images"
+                list_img = os.listdir(img)
+                imgChoice = random.choice(list_img)
+                randomImg = os.path.join(img, imgChoice)
+                ctypes.windll.user32.SystemParametersInfoW(20, 0, randomImg, 0)
+                speak = speak + "Background changed successfully"
+
+            elif "exit" in text or "quit" in text:
+                exit()
+
+            elif "open" in text.lower():
+                if "chrome" in text.lower():
+                    speak = speak + "Opening Google Chrome"
+                    os.startfile(
+                        r"C:\...\chrome.exe"
+                    )
+
+                elif "word" in text.lower():
+                    speak = speak + "Opening Microsoft Word"
+                    os.startfile(
+                        r"C:\...\WINWORD.EXE"
+                    )
+
+                elif "excel" in text.lower():
+                    speak = speak + "Opening Microsoft Excel"
+                    os.startfile(
+                        r"C:\...\EXCEL.EXE"
+                    )
+
+                elif "vs code" in text.lower():
+                    speak = speak + "Opening Visual Studio Code"
+                    os.startfile(
+                        r"C:\...\Code.exe"
+                    )
+
+                elif "youtube" in text.lower():
+                    speak = speak + "Opening Youtube\n"
+                    webbrowser.open("https://youtube.com/")
+
+                elif "google" in text.lower():
+                    speak = speak + "Opening Google\n"
+                    webbrowser.open("https://google.com/")
+
+                elif "stackoverflow" in text.lower():
+                    speak = speak + "Opening StackOverFlow"
+                    webbrowser.open("https://stackoverflow.com/")
+
+                else:
+                    speak = speak + "Application not available"
+
+            elif "youtube" in text.lower():
+                ind = text.lower().split().index("youtube")
+                search = text.split()[ind + 1:]
+                webbrowser.open(
+                    "http://www.youtube.com/results?search_query=" +
+                    "+".join(search)
+                )
+                speak = speak + "Opening " + str(search) + " on youtube"
+
+            elif "search" in text.lower():
+                ind = text.lower().split().index("search")
+                search = text.split()[ind + 1:]
+                webbrowser.open(
+                    "https://www.google.com/search?q=" + "+".join(search))
+                speak = speak + "Searching " + str(search) + " on google"
+
+            elif "google" in text.lower():
+                ind = text.lower().split().index("google")
+                search = text.split()[ind + 1:]
+                webbrowser.open(
+                    "https://www.google.com/search?q=" + "+".join(search))
+                speak = speak + "Searching " + str(search) + " on google"
+
+            elif "play music" in text or "play song" in text:
+                talk("Here you go with music")
+                music_dir = r"...\Music"
+                songs = os.listdir(music_dir)
+                d = random.choice(songs)
+                random = os.path.join(music_dir, d)
+                playsound.playsound(random)
+
+            elif "joke" in text:
+                speak = speak + pyjokes.get_joke()
+
+            elif "empty recycle bin" in text:
+                winshell.recycle_bin().empty(
+                    confirm=True, show_progress=False, sound=True
+                )
+                speak = speak + "Recycle Bin Emptied"
+
+            elif "email to computer" in text or "gmail to computer" in text:
+                try:
+                    talk("What should I say?")
+                    content = rec_audio()
+                    to = "Receiver email address"
+                    send_email(to, content)
+                    speak = speak + "Email has been sent !"
+                except Exception as e:
+                    print(e)
+                    talk("I am not able to send this email")
+
+            elif "mail" in text or "email" in text or "gmail" in text:
+                try:
+                    talk("What should I say?")
+                    content = rec_audio()
+                    talk("whom should i send")
+                    to = input("Enter To Address: ")
+                    send_email(to, content)
+                    speak = speak + "Email has been sent !"
+                except Exception as e:
+                    print(e)
+                    speak = speak + "I am not able to send this email"
+
+            elif "make a note" in text:
+                talk("What would you like me to write down?")
+                note_text = rec_audio()
+                note(note_text)
+                speak = speak + "I have made a note of that."
+
+            elif "news" in text:
+                url = (
+                    "http://newsapi.org/v2/top-headlines?"
+                    "country=in&"
+                    "apiKey="
+                )
+
+                try:
+                    response = requests.get(url)
+                except:
+                    talk("Please check your connection")
+
+                news = json.loads(response.text)
+
+                for new in news["articles"]:
+                    print(str(new["title"]), "\n")
+                    talk(str(new["title"]))
+                    engine.runAndWait()
+
+                    print(str(new["description"]), "\n")
+                    talk(str(new["description"]))
+                    engine.runAndWait()
+                    time.sleep(2)
+
+            elif "send message" in text:
+                account_sid = ""
+                auth_token = ""
+                client = Client(account_sid, auth_token)
+
+                talk("What should i send")
+                message = client.messages.create(
+                    body=rec_audio(), from_="", to=""
+                )
+
+                print(message.sid)
+                speak = speak + "Message sent successfully"
+
+            elif "calculate" in text or 'send a message' in text:
+                app_id = ""
+                client = wolframalpha.Client(app_id)
+                ind = text.lower().split().index("calculate")
+                text = text.split()[ind + 1:]
+                res = client.query(" ".join(text))
+                answer = next(res.results).text
+                speak = speak + "The answer is " + answer
+
+            elif "what is" in text or "who is" in text:
+                app_id = ""
+                client = wolframalpha.Client(app_id)
+                ind = text.lower().split().index("is")
+                text = text.split()[ind + 1:]
+                res = client.query(" ".join(text))
+                answer = next(res.results).text
+                speak = speak + answer
+
+            elif "order a pizza" in text or "pizza" in text:
+                pizza()
+
+
+
+            # Assistant Audio speak
+            response(speak)
+
+    except:
+        talk("I don't know that")
